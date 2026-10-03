@@ -351,9 +351,13 @@ select throws_ok(
 select pg_temp.act_as('00000000-0000-0000-0000-0000000000c2');
 select pg_temp.book('c2_12b', pg_temp.t('12:00'));
 select is(
-  (select array_agg(p.version order by a.created_at)
-   from appointments a join cancellation_policies p on p.id = a.cancellation_policy_id
-   where a.id in (pg_temp.appt('c2_13'), pg_temp.appt('c2_12b'))),
+  -- Looked up one by one: created_at is identical inside a transaction.
+  array[
+    (select p.version from appointments a join cancellation_policies p on p.id = a.cancellation_policy_id
+     where a.id = pg_temp.appt('c2_13')),
+    (select p.version from appointments a join cancellation_policies p on p.id = a.cancellation_policy_id
+     where a.id = pg_temp.appt('c2_12b'))
+  ],
   array[1, 2],
   'new bookings take the latest policy; existing ones keep the version the client accepted'
 );

@@ -1,26 +1,127 @@
 @import "tailwindcss";
 
+/*
+ * Provisional identity — "Ink, Stone & Brass".
+ * Unisex and high-end: near-black ink and warm stone neutrals that suit a
+ * barbershop as much as a beauty salon, with a single brass accent used
+ * sparingly. Every text pair meets WCAG AA (≥ 4.5:1); form-control borders
+ * and focus rings meet 3:1. Change colors here only — components use tokens.
+ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --paper: #f7f5f2;       /* page background */
+  --surface: #ffffff;     /* cards, inputs */
+  --stone: #eeeae4;       /* subtle fills, hover */
+  --line: #dedad3;        /* dividers (decorative) */
+  --line-strong: #8e877d; /* form-control borders (3:1) */
+  --ink: #17191b;         /* primary text, primary buttons */
+  --ink-soft: #3a3d40;
+  --muted: #6b675f;       /* secondary text */
+  --on-ink: #f7f5f2;      /* text on ink */
+  --brass: #9c7a45;       /* accent fills, focus ring, rules */
+  --brass-ink: #7a5c2e;   /* accent text on light backgrounds */
+  --success: #2e6a4f;
+  --danger: #a33a30;
+  --warning: #8f6420;
+  /* Inverse band: always dark, in both themes */
+  --inverse: #17191b;
+  --inverse-fg: #f7f5f2;
+  --inverse-muted: #b7b1a8;
+  --inverse-accent: #c4a26c;
+  color-scheme: light;
 }
 
 @media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+  :root:not([data-theme="light"]) {
+    --paper: #0f1112;
+    --surface: #171a1c;
+    --stone: #1f2326;
+    --line: #2c3135;
+    --line-strong: #6a6560;
+    --ink: #ece9e4;
+    --ink-soft: #c9c5be;
+    --muted: #9a958d;
+    --on-ink: #0f1112;
+    --brass: #c4a26c;
+    --brass-ink: #d4b583;
+    --success: #6fb592;
+    --danger: #e07a6e;
+    --warning: #d9a85a;
+    --inverse: #1f2326;
+    --inverse-fg: #ece9e4;
+    --inverse-muted: #b7b1a8;
+    --inverse-accent: #d4b583;
+    color-scheme: dark;
   }
 }
 
+:root[data-theme="dark"] {
+  --paper: #0f1112;
+  --surface: #171a1c;
+  --stone: #1f2326;
+  --line: #2c3135;
+  --line-strong: #6a6560;
+  --ink: #ece9e4;
+  --ink-soft: #c9c5be;
+  --muted: #9a958d;
+  --on-ink: #0f1112;
+  --brass: #c4a26c;
+  --brass-ink: #d4b583;
+  --success: #6fb592;
+  --danger: #e07a6e;
+  --warning: #d9a85a;
+  --inverse: #1f2326;
+  --inverse-fg: #ece9e4;
+  --inverse-muted: #b7b1a8;
+  --inverse-accent: #d4b583;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-surface: var(--surface);
+  --color-stone: var(--stone);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-muted: var(--muted);
+  --color-on-ink: var(--on-ink);
+  --color-brass: var(--brass);
+  --color-brass-ink: var(--brass-ink);
+  --color-success: var(--success);
+  --color-danger: var(--danger);
+  --color-warning: var(--warning);
+  --color-inverse: var(--inverse);
+  --color-inverse-fg: var(--inverse-fg);
+  --color-inverse-muted: var(--inverse-muted);
+  --color-inverse-accent: var(--inverse-accent);
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+  --font-display: var(--font-instrument-serif), ui-serif, Georgia, serif;
+
+  --radius-control: 0.625rem;
+  --radius-card: 1rem;
+}
+
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-feature-settings: "ss01", "cv11";
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Times and prices line up in lists and grids. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+:focus-visible {
+  outline: 2px solid var(--brass);
+  outline-offset: 2px;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--brass) 30%, transparent);
 }
