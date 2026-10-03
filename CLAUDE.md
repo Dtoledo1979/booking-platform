@@ -12,3 +12,7 @@
   go through server code (Edge Functions / security definer RPCs), never
   directly from the browser.
 - Database changes are Supabase CLI migrations in `supabase/migrations`.
+- Database tests are pgTAP files in `supabase/tests/database`. No Docker on
+  this machine: run them against the linked dev project with
+  `npm run test:db` (each file rolls back). Run `supabase db advisors --linked`
+  after every migration.
