@@ -8,7 +8,7 @@ import { FormMessage, SubmitButton } from "@/components/ui/submit-button";
 import { idle } from "@/lib/form-state";
 import { signUp } from "../actions";
 
-export function SignUpForm() {
+export function SignUpForm({ accountType = "business", next }: { accountType?: "business" | "client"; next?: string }) {
   const [state, action] = useActionState(signUp, idle);
   const err = (name: string) => state.fieldErrors?.[name]?.[0];
   const val = (name: string) => state.values?.[name];
@@ -27,6 +27,8 @@ export function SignUpForm() {
     <Card>
       <form action={action} className="flex flex-col gap-4" noValidate>
         <FormMessage status={state.status} message={state.message} />
+        <input type="hidden" name="accountType" value={accountType} />
+        <input type="hidden" name="next" value={next ?? ""} />
         <div className="grid gap-4 sm:grid-cols-2">
           <Field label="First name" htmlFor="firstName" error={err("firstName")}>
             <Input id="firstName" name="firstName" defaultValue={val("firstName")} autoComplete="given-name" required aria-invalid={!!err("firstName")} />
@@ -35,7 +37,21 @@ export function SignUpForm() {
             <Input id="lastName" name="lastName" defaultValue={val("lastName")} autoComplete="family-name" required aria-invalid={!!err("lastName")} />
           </Field>
         </div>
-        <Field label="Work email" htmlFor="email" error={err("email")}>
+        {accountType === "client" && (
+          <Field label="Mobile" htmlFor="phone" hint="For appointment reminders only" error={err("phone")}>
+            <Input
+              id="phone"
+              name="phone"
+              type="tel"
+              defaultValue={val("phone")}
+              autoComplete="tel"
+              placeholder="021 123 4567"
+              required
+              aria-invalid={!!err("phone")}
+            />
+          </Field>
+        )}
+        <Field label={accountType === "client" ? "Email" : "Work email"} htmlFor="email" error={err("email")}>
           <Input id="email" name="email" defaultValue={val("email")} type="email" autoComplete="email" required aria-invalid={!!err("email")} />
         </Field>
         <Field label="Password" htmlFor="password" hint="At least 8 characters" error={err("password")}>

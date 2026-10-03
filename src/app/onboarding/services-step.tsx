@@ -22,7 +22,7 @@ function formatDuration(minutes: number) {
   return [h && `${h} h`, m && `${m} min`].filter(Boolean).join(" ");
 }
 
-export function ServicesStep({ services }: { services: ServiceRow[] }) {
+export function ServicesStep({ services, editing = false }: { services: ServiceRow[]; editing?: boolean }) {
   const [state, action] = useActionState(addService, idle);
   const [removing, startRemove] = useTransition();
   const err = (name: string) => state.fieldErrors?.[name]?.[0];
@@ -106,8 +106,8 @@ export function ServicesStep({ services }: { services: ServiceRow[] }) {
           {services.length ? `${services.length} service${services.length === 1 ? "" : "s"} added` : "Add at least one service"}
         </p>
         {services.length > 0 ? (
-          <Link href="/onboarding?step=hours" className={buttonClasses("primary", "lg")}>
-            Continue
+          <Link href={editing ? "/dashboard" : "/onboarding?step=hours"} className={buttonClasses("primary", "lg")}>
+            {editing ? "Done" : "Continue"}
           </Link>
         ) : (
           <span className={buttonClasses("primary", "lg", "pointer-events-none opacity-40")} aria-disabled>

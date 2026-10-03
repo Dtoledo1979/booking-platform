@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { AppHeader } from "@/components/app/app-header";
+import { AppHeader, businessNav } from "@/components/app/app-header";
 import { Eyebrow } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { cn } from "@/lib/cn";
@@ -36,6 +36,8 @@ export default async function OnboardingPage({ searchParams }: PageProps<"/onboa
   }
   if (step === "done") redirect("/dashboard");
 
+  // Once setup is complete, these screens are just editors for the dashboard.
+  const editing = progress === "done";
   const current = STEPS.findIndex((s) => s.id === step);
   const meta = STEPS[current];
 
@@ -48,19 +50,23 @@ export default async function OnboardingPage({ searchParams }: PageProps<"/onboa
       .select("id, name, duration_minutes, price_cents")
       .eq("location_id", ctx.location.id)
       .order("created_at");
-    body = <ServicesStep services={data ?? []} />;
+    body = <ServicesStep services={data ?? []} editing={editing} />;
   } else if (step === "hours" && ctx) {
     const { data } = await supabase
       .from("location_opening_hours")
       .select("weekday, opens_at, closes_at")
       .eq("location_id", ctx.location.id);
-    body = <HoursStep hours={data ?? []} ownerWorks={!!ctx.ownerStaffId} />;
+    body = <HoursStep hours={data ?? []} ownerWorks={!!ctx.ownerStaffId} editing={editing} />;
   }
 
   return (
     <>
-      <AppHeader subtitle={ctx?.location.name} />
+      <AppHeader
+        subtitle={ctx?.location.name}
+        nav={editing && ctx ? businessNav(ctx.location.slug, step === "services" ? "services" : "hours") : []}
+      />
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
+        {!editing && (
         <ol className="flex gap-2" aria-label="Setup progress">
           {STEPS.map((s, i) => (
             <li key={s.id} className="flex flex-1 flex-col gap-2">
@@ -74,10 +80,9 @@ export default async function OnboardingPage({ searchParams }: PageProps<"/onboa
             </li>
           ))}
         </ol>
+        )}
         <div className="flex flex-col gap-3">
-          <Eyebrow>
-            Step {current + 1} of {STEPS.length}
-          </Eyebrow>
+          <Eyebrow>{editing ? "Settings" : `Step ${current + 1} of ${STEPS.length}`}</Eyebrow>
           <h1 className="font-display text-4xl leading-tight">{meta.title}</h1>
           <p className="text-ink-soft">{meta.intro}</p>
         </div>

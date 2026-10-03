@@ -30,7 +30,7 @@ const DEFAULTS: Record<number, [string, string] | null> = {
   6: ["09:00", "16:00"],
 };
 
-export function HoursStep({ hours, ownerWorks }: { hours: HoursRow[]; ownerWorks: boolean }) {
+export function HoursStep({ hours, ownerWorks, editing = false }: { hours: HoursRow[]; ownerWorks: boolean; editing?: boolean }) {
   const [state, action] = useActionState(saveHours, idle);
   const saved = new Map(hours.map((h) => [h.weekday, [h.opens_at.slice(0, 5), h.closes_at.slice(0, 5)]]));
   const echoed = state.status === "error" ? state.values : undefined;
@@ -95,7 +95,7 @@ export function HoursStep({ hours, ownerWorks }: { hours: HoursRow[]; ownerWorks
             : "Your team's individual hours are set when you add them."}
         </p>
         <SubmitButton size="lg" pendingLabel="Saving…">
-          Save and finish
+          {editing ? "Save hours" : "Save and finish"}
         </SubmitButton>
       </form>
     </Card>

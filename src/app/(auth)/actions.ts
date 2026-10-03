@@ -13,6 +13,14 @@ const signUpSchema = z.object({
   email: z.email("Enter a valid email address").trim().toLowerCase(),
   password: z.string().min(8, "Use at least 8 characters").max(72),
   terms: z.literal("on", { error: "You need to accept the terms to continue" }),
+  accountType: z.enum(["business", "client"]).default("business"),
+  phone: z
+    .string()
+    .trim()
+    .max(32)
+    .regex(/^[+ds()-]*$/, "Enter a valid phone number")
+    .optional(),
+  next: z.string().optional(),
 });
 
 async function siteOrigin() {
@@ -26,7 +34,12 @@ async function siteOrigin() {
 export async function signUp(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = signUpSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return fieldErrorsOf(parsed.error, formData);
-  const { firstName, lastName, email, password } = parsed.data;
+  const { firstName, lastName, email, password, accountType, phone } = parsed.data;
+  if (accountType === "client" && !phone) {
+    return { status: "error", fieldErrors: { phone: ["We need your mobile for appointment reminders"] }, values: echoValues(formData) };
+  }
+  // Business owners continue to setup; clients go back to what they were booking.
+  const destination = safeNextPath(parsed.data.next, accountType === "client" ? "/my-bookings" : "/onboarding");
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -34,8 +47,8 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
     password,
     options: {
       // Picked up by the handle_new_user trigger to create the profile.
-      data: { first_name: firstName, last_name: lastName },
-      emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=/onboarding`,
+      data: { first_name: firstName, last_name: lastName, phone: phone || null, account_type: accountType },
+      emailRedirectTo: `${await siteOrigin()}/auth/confirm?next=${encodeURIComponent(destination)}`,
     },
   });
 
@@ -54,13 +67,16 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
   }
 
   // Email confirmation off (e.g. local dev): straight into onboarding.
-  if (data.session) redirect("/onboarding");
+  if (data.session) redirect(destination);
 
   // Same answer whether or not the email already had an account, so the
   // form can't be used to discover who is registered.
   return {
     status: "success",
-    message: `We've sent a confirmation link to ${email}. Open it to continue setting up your business.`,
+    message:
+      accountType === "client"
+        ? `We've sent a confirmation link to ${email}. Open it to finish your booking.`
+        : `We've sent a confirmation link to ${email}. Open it to continue setting up your business.`,
   };
 }
 

@@ -5,7 +5,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(49);
+select plan(52);
 
 -- ------------------------------------------------------------
 -- Session helpers (same as 001)
@@ -451,6 +451,27 @@ select is(
   (select count(*) from get_available_slots(pg_temp.loc(), pg_temp.svc(), pg_temp.day(), pg_temp.day())),
   0::bigint,
   'a paused location offers no availability'
+);
+
+-- ------------------------------------------------------------
+-- my_appointments (client view)
+-- ------------------------------------------------------------
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000c1');
+select is(
+  (select count(*) from my_appointments()),
+  4::bigint,
+  'my_appointments lists the client''s own visits (expired/pending holds excluded)'
+);
+select is(
+  (select format('%s %s', location_name, location_is_public) from my_appointments() limit 1),
+  'Olivia Nails f',
+  'the location name still shows after the location stops being public'
+);
+select pg_temp.act_as('00000000-0000-0000-0000-0000000000a1');
+select is(
+  (select count(*) from my_appointments()),
+  0::bigint,
+  'staff never see their salon''s bookings as their own'
 );
 
 select * from finish();

@@ -1103,6 +1103,28 @@ export type Database = {
         Args: { p_appointment_id: string; p_charge_fee: boolean }
         Returns: Json
       }
+      my_appointments: {
+        Args: never
+        Returns: {
+          appointment_id: string
+          cancelled_by: Database["public"]["Enums"]["cancelled_by"]
+          currency: string
+          ends_at: string
+          fee_cents: number
+          fee_status: Database["public"]["Enums"]["fee_status"]
+          free_until: string
+          location_is_public: boolean
+          location_name: string
+          location_slug: string
+          location_timezone: string
+          price_cents: number
+          service_id: string
+          services: string
+          staff_name: string
+          starts_at: string
+          status: Database["public"]["Enums"]["appointment_status"]
+        }[]
+      }
       publish_cancellation_policy: {
         Args: {
           p_free_cancellation_hours: number
