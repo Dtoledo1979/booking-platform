@@ -1,4 +1,6 @@
 -- RLS and integrity tests for 20261003000001_core_tenancy.sql.
+-- Assertions are scoped to the fixtures created here, so they hold no
+-- matter what other data exists in the dev project.
 -- Runs inside a transaction and rolls back: safe against the dev project.
 begin;
 create extension if not exists pgtap with schema extensions;
@@ -139,11 +141,11 @@ select is(
 -- Draft locations are private
 -- ------------------------------------------------------------
 select pg_temp.act_as(null);
-select is((select count(*) from locations), 0::bigint, 'anon cannot see draft locations');
-select is((select count(*) from services), 0::bigint, 'anon cannot see services of draft locations');
+select is((select count(*) from locations where id = (select location_id from ids)), 0::bigint, 'anon cannot see draft locations');
+select is((select count(*) from services where location_id = (select location_id from ids)), 0::bigint, 'anon cannot see services of draft locations');
 
 select pg_temp.act_as('00000000-0000-0000-0000-0000000000a4');
-select is((select count(*) from locations), 0::bigint, 'strangers cannot see draft locations');
+select is((select count(*) from locations where id = (select location_id from ids)), 0::bigint, 'strangers cannot see draft locations');
 select is(
   pg_temp.affected($$ update locations set name = 'Hacked' $$),
   0::bigint,
@@ -158,8 +160,8 @@ reset role;
 update locations set status = 'active' where id = (select location_id from ids);
 
 select pg_temp.act_as(null);
-select is((select count(*) from locations), 1::bigint, 'anon sees active locations');
-select is((select count(*) from services), 1::bigint, 'anon sees active services');
+select is((select count(*) from locations where id = (select location_id from ids)), 1::bigint, 'anon sees active locations');
+select is((select count(*) from services where location_id = (select location_id from ids)), 1::bigint, 'anon sees active services');
 select throws_ok(
   $$ select user_id from staff $$,
   '42501', null,
