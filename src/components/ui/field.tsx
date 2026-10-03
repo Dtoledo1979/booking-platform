@@ -1,4 +1,4 @@
-import type { ComponentProps, ReactNode } from "react";
+import { cloneElement, isValidElement, type ComponentProps, type ReactElement, type ReactNode } from "react";
 import { cn } from "@/lib/cn";
 
 const control =
@@ -21,19 +21,26 @@ export function Select({ className, ...props }: ComponentProps<"select">) {
 type FieldProps = {
   label: string;
   htmlFor: string;
-  hint?: string;
+  hint?: ReactNode;
   error?: string;
   children: ReactNode;
 };
 
-// Label + control + hint/error, wired for screen readers.
+// Label + control + hint/error. The control is linked to its hint or error
+// with aria-describedby so screen readers announce them together.
 export function Field({ label, htmlFor, hint, error, children }: FieldProps) {
+  const describedBy = error ? `${htmlFor}-error` : hint ? `${htmlFor}-hint` : undefined;
+  const control =
+    describedBy && isValidElement(children)
+      ? cloneElement(children as ReactElement<{ "aria-describedby"?: string }>, { "aria-describedby": describedBy })
+      : children;
+
   return (
     <div className="flex flex-col gap-1.5">
       <label htmlFor={htmlFor} className="text-sm font-medium text-ink">
         {label}
       </label>
-      {children}
+      {control}
       {error ? (
         <p id={`${htmlFor}-error`} className="text-sm text-danger">
           {error}

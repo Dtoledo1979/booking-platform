@@ -4,7 +4,7 @@ begin;
 create extension if not exists pgtap with schema extensions;
 set local search_path = public, extensions;
 
-select plan(24);
+select plan(25);
 
 -- ------------------------------------------------------------
 -- Fixtures: four users
@@ -123,6 +123,16 @@ select throws_ok(
   $$ select create_organization('X', 'X', 'x-salon', 'Mars/Olympus') $$,
   '22023', null,
   'invalid timezones are rejected'
+);
+select is(
+  array[
+    is_slug_available('olivia-nails'),   -- taken (draft, invisible under RLS)
+    is_slug_available('styleguide'),     -- reserved route
+    is_slug_available('Bad Slug'),       -- invalid format
+    is_slug_available('free-salon')      -- available
+  ],
+  array[false, false, false, true],
+  'is_slug_available covers taken, reserved, malformed and free slugs'
 );
 
 -- ------------------------------------------------------------
