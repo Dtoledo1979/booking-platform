@@ -327,9 +327,9 @@ language sql
 stable
 security definer
 set search_path = ''
-as $
+as $$
   select exists (select 1 from public.staff where id = p_staff and user_id = (select auth.uid()));
-$;
+$$;
 create trigger staff_updated_at before update on public.staff
   for each row execute function private.set_updated_at();
 

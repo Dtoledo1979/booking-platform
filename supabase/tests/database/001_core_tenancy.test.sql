@@ -35,15 +35,26 @@ begin
   end if;
 end $$;
 
+-- Run a write as the current role and report how many rows it touched
+-- (RLS silently filters UPDATE/DELETE instead of raising).
+create function pg_temp.affected(p_sql text) returns bigint language plpgsql as $f$
+declare n bigint;
+begin
+  execute p_sql;
+  get diagnostics n = row_count;
+  return n;
+end $f$;
+
+-- New functions get no PUBLIC execute (see migration 0002), so the test
+-- roles need explicit grants on these helpers too.
+grant execute on function pg_temp.act_as(uuid), pg_temp.affected(text) to anon, authenticated;
+
 -- ------------------------------------------------------------
 -- Onboarding
 -- ------------------------------------------------------------
-select pg_temp.act_as(null);
-select throws_ok(
-  $$ select create_organization('Anon Org', 'Anon Salon', 'anon-salon') $$,
-  '42501',
-  null,
-  'anon cannot call create_organization'
+select ok(
+  not has_function_privilege('anon', 'public.create_organization(text, text, text, text, boolean)', 'execute'),
+  'anon has no EXECUTE on create_organization'
 );
 
 select pg_temp.act_as('00000000-0000-0000-0000-0000000000a1');
@@ -124,7 +135,7 @@ select is((select count(*) from services), 0::bigint, 'anon cannot see services 
 select pg_temp.act_as('00000000-0000-0000-0000-0000000000a4');
 select is((select count(*) from locations), 0::bigint, 'strangers cannot see draft locations');
 select is(
-  (with u as (update locations set name = 'Hacked' returning 1) select count(*) from u),
+  pg_temp.affected($$ update locations set name = 'Hacked' $$),
   0::bigint,
   'strangers cannot edit locations'
 );
@@ -178,7 +189,7 @@ select throws_ok(
 
 select pg_temp.act_as('00000000-0000-0000-0000-0000000000a2');
 select is(
-  (with u as (update services set price_cents = 7000 returning 1) select count(*) from u),
+  pg_temp.affected($$ update services set price_cents = 7000 $$),
   1::bigint,
   'a manager can edit services at their location'
 );
