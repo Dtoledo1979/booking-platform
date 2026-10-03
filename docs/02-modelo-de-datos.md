@@ -2,7 +2,10 @@
 
 ## Convenciones
 
-- Postgres en Supabase, esquema `app`. Nombres en inglés y `snake_case`.
+- Postgres en Supabase, esquema `public` (el proyecto es exclusivo de esta
+  plataforma). La API arranca sin permisos y cada tabla recibe permisos
+  explícitos. Las funciones auxiliares de seguridad viven en el esquema
+  `private`, que no se expone. Nombres en inglés y `snake_case`.
 - Claves primarias `uuid` (`gen_random_uuid()`).
 - Dinero en **centavos enteros** (`amount_cents int`) con su `currency`
   (`'NZD'`). Nunca `float` ni `numeric` con decimales en la aplicación.
