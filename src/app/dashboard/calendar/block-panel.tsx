@@ -15,12 +15,14 @@ import { createTimeOff, deleteTimeOff } from "./actions";
 export function BlockPanel({
   block,
   staff,
+  allowWholeLocation = true,
   timeZone,
   defaults,
   closeHref,
 }: {
   block: CalendarBlock | null;
   staff: { id: string; display_name: string }[];
+  allowWholeLocation?: boolean;
   timeZone: string;
   defaults: { staffId: string; date: string };
   closeHref: string;
@@ -94,7 +96,7 @@ export function BlockPanel({
                 {m.display_name}
               </option>
             ))}
-            <option value="">Whole location (closed)</option>
+            {allowWholeLocation && <option value="">Whole location (closed)</option>}
           </Select>
         </Field>
         <Field label="Date" htmlFor="block-date" error={err("date")}>

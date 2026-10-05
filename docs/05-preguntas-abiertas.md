@@ -7,13 +7,20 @@ cosa, se construye con ese valor.
 
 | Tema | Decisión |
 |---|---|
-| Precio | NZ$49.99 por sucursal activa al mes, con GST incluido |
 | Penalidad por cancelar la suscripción | Ninguna |
 | Fee de cancelación y no-show del cliente final | 100% para el salón; la plataforma no retiene nada |
 | Mercado inicial | Nueva Zelanda, NZD |
 | Frontend | Next.js + TypeScript |
 | Infraestructura | Repo nuevo y proyecto de Supabase propio (no compartido con Passport) |
 | Nombre | Provisional; se cambia cuando haya dominio |
+
+## Precio (en revisión)
+
+El precio inicial era NZ$49.99 por sucursal al mes. Se decidió (6 oct 2026) que **no puede costar lo mismo** una barbería con un solo profesional que un salón con un equipo de cinco. El modelo se definirá más adelante. Mientras tanto:
+
+- El sistema ya puede contar los **profesionales reservables activos** por sucursal (`staff.active and is_bookable_online`), que es la base de cualquier cobro por tamaño.
+- Opciones a evaluar: precio por profesional (como Fresha Team), tramos (1 / 2–5 / 6+) o una base por sucursal más un monto por profesional adicional.
+- Se mantiene: sin penalidad por cancelar la suscripción y fees de cancelación 100% para el salón.
 
 ## Producto
 

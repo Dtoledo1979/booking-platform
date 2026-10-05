@@ -653,30 +653,42 @@ export type Database = {
           accepted_at: string | null
           created_at: string
           id: string
+          invite_expires_at: string | null
+          invite_token_hash: string | null
+          invited_by: string | null
           invited_email: string | null
           location_id: string | null
           organization_id: string
           role: Database["public"]["Enums"]["member_role"]
+          staff_id: string | null
           user_id: string | null
         }
         Insert: {
           accepted_at?: string | null
           created_at?: string
           id?: string
+          invite_expires_at?: string | null
+          invite_token_hash?: string | null
+          invited_by?: string | null
           invited_email?: string | null
           location_id?: string | null
           organization_id: string
           role: Database["public"]["Enums"]["member_role"]
+          staff_id?: string | null
           user_id?: string | null
         }
         Update: {
           accepted_at?: string | null
           created_at?: string
           id?: string
+          invite_expires_at?: string | null
+          invite_token_hash?: string | null
+          invited_by?: string | null
           invited_email?: string | null
           location_id?: string | null
           organization_id?: string
           role?: Database["public"]["Enums"]["member_role"]
+          staff_id?: string | null
           user_id?: string | null
         }
         Relationships: [
@@ -693,6 +705,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "organizations"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "memberships_staff_fk"
+            columns: ["staff_id", "location_id"]
+            isOneToOne: false
+            referencedRelation: "staff"
+            referencedColumns: ["id", "location_id"]
           },
         ]
       }
@@ -1037,6 +1056,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      accept_invite: { Args: { p_token: string }; Returns: string }
       book_appointment: {
         Args: {
           p_accept_policy?: boolean
@@ -1055,6 +1075,15 @@ export type Database = {
       confirm_pending_appointment: {
         Args: { p_appointment_id: string }
         Returns: undefined
+      }
+      create_invite: {
+        Args: {
+          p_email: string
+          p_location_id: string
+          p_role: Database["public"]["Enums"]["member_role"]
+          p_staff_id?: string
+        }
+        Returns: string
       }
       create_organization: {
         Args: {
@@ -1094,7 +1123,29 @@ export type Database = {
         Args: { p_appointment_id: string }
         Returns: Json
       }
+      get_invite: {
+        Args: { p_token: string }
+        Returns: {
+          expired: boolean
+          invited_email: string
+          location_name: string
+          organization_name: string
+          role: Database["public"]["Enums"]["member_role"]
+        }[]
+      }
       is_slug_available: { Args: { p_slug: string }; Returns: boolean }
+      location_members: {
+        Args: { p_location_id: string }
+        Returns: {
+          email: string
+          invite_expires_at: string
+          membership_id: string
+          name: string
+          role: Database["public"]["Enums"]["member_role"]
+          staff_id: string
+          status: string
+        }[]
+      }
       mark_appointment_completed: {
         Args: { p_appointment_id: string }
         Returns: undefined
@@ -1137,6 +1188,7 @@ export type Database = {
         }
         Returns: string
       }
+      remove_member: { Args: { p_membership_id: string }; Returns: undefined }
       reschedule_appointment: {
         Args: {
           p_appointment_id: string

@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { echoValues, fieldErrorsOf, friendlyDbError, type FormState } from "@/lib/form-state";
-import { getOwnerContext } from "@/lib/owner-context";
+import { can, getMemberContext } from "@/lib/owner-context";
 import { createClient } from "@/lib/supabase/server";
 
 const optional = (max: number) =>
@@ -33,8 +33,9 @@ const profileSchema = z.object({
 export async function updateLocationProfile(_prev: FormState, formData: FormData): Promise<FormState> {
   const user = await requireUser("/dashboard/profile");
   const supabase = await createClient();
-  const ctx = await getOwnerContext(supabase, user.id);
+  const ctx = await getMemberContext(supabase, user.id);
   if (!ctx) redirect("/onboarding");
+  if (!can(ctx.role).manageBusiness) return { status: "error", message: "You don't have permission to do that." };
 
   const parsed = profileSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return fieldErrorsOf(parsed.error, formData);

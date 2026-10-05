@@ -4,6 +4,7 @@ import { Logo } from "@/components/brand/logo";
 import { buttonClasses } from "@/components/ui/button";
 import { brand } from "@/config/brand";
 import { cn } from "@/lib/cn";
+import { can, type MemberRole } from "@/lib/owner-context";
 
 export type NavItem = { href: string; label: string; current?: boolean };
 
@@ -47,17 +48,23 @@ export function AppHeader({ subtitle, nav = [], homeHref = "/dashboard" }: { sub
   );
 }
 
-// Sections of the business dashboard.
+// Sections of the business dashboard, filtered by what the role can do.
 export function businessNav(
   slug: string,
-  current: "overview" | "calendar" | "profile" | "services" | "hours",
+  current: "overview" | "calendar" | "team" | "profile" | "services" | "hours",
+  role: MemberRole = "owner",
 ): NavItem[] {
-  return [
-    { href: "/dashboard", label: "Overview", current: current === "overview" },
+  const manager = can(role).manageBusiness;
+  const items: (NavItem & { managerOnly?: boolean })[] = [
+    { href: "/dashboard", label: "Overview", current: current === "overview", managerOnly: true },
     { href: "/dashboard/calendar", label: "Calendar", current: current === "calendar" },
-    { href: "/dashboard/profile", label: "Location profile", current: current === "profile" },
-    { href: "/onboarding?step=services", label: "Services", current: current === "services" },
-    { href: "/onboarding?step=hours", label: "Opening hours", current: current === "hours" },
+    { href: "/dashboard/team", label: "Team", current: current === "team", managerOnly: true },
+    { href: "/dashboard/profile", label: "Location profile", current: current === "profile", managerOnly: true },
+    { href: "/onboarding?step=services", label: "Services", current: current === "services", managerOnly: true },
+    { href: "/onboarding?step=hours", label: "Opening hours", current: current === "hours", managerOnly: true },
     { href: `/${slug}`, label: "Booking page ↗" },
   ];
+  return items
+    .filter((i) => manager || !i.managerOnly)
+    .map((i) => ({ href: i.href, label: i.label, current: i.current }));
 }

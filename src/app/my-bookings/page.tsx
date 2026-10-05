@@ -6,7 +6,7 @@ import { Badge, Card, Eyebrow } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { formatDate, formatMoney, formatTime } from "@/lib/format";
 import { getMyAppointments, type MyAppointment } from "@/lib/my-appointments";
-import { getOwnerContext } from "@/lib/owner-context";
+import { getMemberContext } from "@/lib/owner-context";
 import { createClient } from "@/lib/supabase/server";
 import { CancelButton } from "./cancel-button";
 
@@ -82,7 +82,7 @@ function AppointmentCard({ a, upcoming }: { a: MyAppointment; upcoming: boolean 
 export default async function MyBookingsPage() {
   const user = await requireUser("/my-bookings");
   const supabase = await createClient();
-  const [appointments, ownerCtx] = await Promise.all([getMyAppointments(supabase), getOwnerContext(supabase, user.id)]);
+  const [appointments, ownerCtx] = await Promise.all([getMyAppointments(supabase), getMemberContext(supabase, user.id)]);
 
   const now = new Date();
   const upcoming = appointments

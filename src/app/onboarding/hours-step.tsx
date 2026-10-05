@@ -1,26 +1,16 @@
 "use client";
 
 import { useActionState } from "react";
+import { WeekHoursFields, windowsFromRows, type DayWindow } from "@/components/app/week-hours-fields";
 import { Card } from "@/components/ui/card";
 import { FormMessage, SubmitButton } from "@/components/ui/submit-button";
-import { cn } from "@/lib/cn";
 import { idle } from "@/lib/form-state";
 import { saveHours } from "./actions";
 
 export type HoursRow = { weekday: number; opens_at: string; closes_at: string };
 
-// Monday first, as NZ calendars show it. 0 = Sunday in the database.
-const WEEK = [
-  [1, "Monday"],
-  [2, "Tuesday"],
-  [3, "Wednesday"],
-  [4, "Thursday"],
-  [5, "Friday"],
-  [6, "Saturday"],
-  [0, "Sunday"],
-] as const;
-
-const DEFAULTS: Record<number, [string, string] | null> = {
+// Typical salon week, used until the owner saves their own.
+const DEFAULTS: Record<number, DayWindow> = {
   0: null,
   1: null,
   2: ["09:00", "17:30"],
@@ -32,67 +22,23 @@ const DEFAULTS: Record<number, [string, string] | null> = {
 
 export function HoursStep({ hours, ownerWorks, editing = false }: { hours: HoursRow[]; ownerWorks: boolean; editing?: boolean }) {
   const [state, action] = useActionState(saveHours, idle);
-  const saved = new Map(hours.map((h) => [h.weekday, [h.opens_at.slice(0, 5), h.closes_at.slice(0, 5)]]));
-  const echoed = state.status === "error" ? state.values : undefined;
+  const initial = hours.length
+    ? windowsFromRows(hours.map((h) => ({ weekday: h.weekday, start: h.opens_at, end: h.closes_at })))
+    : DEFAULTS;
 
   return (
     <Card>
       <form action={action} className="flex flex-col gap-5" noValidate>
         <FormMessage status={state.status} message={state.message} />
-        <ul className="flex flex-col divide-y divide-line">
-          {WEEK.map(([weekday, label]) => {
-            const initial = saved.size ? (saved.get(weekday) ?? null) : DEFAULTS[weekday];
-            const open = echoed ? echoed[`open_${weekday}`] === "on" : initial !== null;
-            const opens = echoed?.[`opens_${weekday}`] ?? initial?.[0] ?? "09:00";
-            const closes = echoed?.[`closes_${weekday}`] ?? initial?.[1] ?? "17:00";
-            const error = state.fieldErrors?.[`day_${weekday}`]?.[0];
-            return (
-              <li key={weekday} className="py-3">
-                <div className="group flex flex-wrap items-center gap-x-4 gap-y-2">
-                  <label className="flex w-36 cursor-pointer items-center gap-3">
-                    <input
-                      type="checkbox"
-                      name={`open_${weekday}`}
-                      defaultChecked={open}
-                      className="day-toggle size-4 accent-[var(--ink)]"
-                    />
-                    <span className="font-medium">{label}</span>
-                  </label>
-                  <span className="flex items-center gap-2 group-has-[.day-toggle:not(:checked)]:opacity-40">
-                    <input
-                      type="time"
-                      name={`opens_${weekday}`}
-                      defaultValue={opens}
-                      step={900}
-                      aria-label={`${label} opens`}
-                      className={cn(
-                        "tabular h-10 rounded-control border border-line-strong bg-surface px-2.5 font-mono text-sm",
-                        error && "border-danger",
-                      )}
-                    />
-                    <span className="text-muted">–</span>
-                    <input
-                      type="time"
-                      name={`closes_${weekday}`}
-                      defaultValue={closes}
-                      step={900}
-                      aria-label={`${label} closes`}
-                      className={cn(
-                        "tabular h-10 rounded-control border border-line-strong bg-surface px-2.5 font-mono text-sm",
-                        error && "border-danger",
-                      )}
-                    />
-                  </span>
-                </div>
-                {error && <p className="mt-1.5 text-sm text-danger">{error}</p>}
-              </li>
-            );
-          })}
-        </ul>
+        <WeekHoursFields
+          initial={initial}
+          echoed={state.status === "error" ? state.values : undefined}
+          fieldErrors={state.fieldErrors}
+        />
         <p className="text-sm text-muted">
           {ownerWorks
-            ? "These are also your bookable hours. You can add breaks and days off from the dashboard."
-            : "Your team's individual hours are set when you add them."}
+            ? "These are also your bookable hours. You can add breaks and days off from the calendar."
+            : "Each team member's own hours are set on the Team page."}
         </p>
         <SubmitButton size="lg" pendingLabel="Saving…">
           {editing ? "Save hours" : "Save and finish"}

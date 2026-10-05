@@ -5,7 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { echoValues, fieldErrorsOf, friendlyDbError, type FormState } from "@/lib/form-state";
-import { getOwnerContext } from "@/lib/owner-context";
+import { getMemberContext } from "@/lib/owner-context";
 import { requestFeeCollection, requestFeeRefund } from "@/lib/payments";
 import { createClient } from "@/lib/supabase/server";
 import { DATE_KEY, zonedTimeToUtc } from "@/lib/time";
@@ -37,7 +37,7 @@ function message(error: { message?: string; code?: string }) {
 async function context() {
   const user = await requireUser("/dashboard/calendar");
   const supabase = await createClient();
-  const ctx = await getOwnerContext(supabase, user.id);
+  const ctx = await getMemberContext(supabase, user.id);
   if (!ctx) redirect("/onboarding");
   return { supabase, ctx };
 }

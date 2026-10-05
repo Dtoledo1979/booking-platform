@@ -5,8 +5,9 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
 import { echoValues, fieldErrorsOf, friendlyDbError, type FormState } from "@/lib/form-state";
-import { getOwnerContext } from "@/lib/owner-context";
+import { can, getMemberContext } from "@/lib/owner-context";
 import { SLUG_PATTERN } from "@/lib/slug";
+import { parseWeekHours } from "@/lib/hours";
 import { createClient } from "@/lib/supabase/server";
 import { TIMEZONE_VALUES } from "@/lib/timezones";
 
@@ -15,8 +16,17 @@ import { TIMEZONE_VALUES } from "@/lib/timezones";
 async function ownerOrRedirect() {
   const user = await requireUser("/onboarding");
   const supabase = await createClient();
-  const ctx = await getOwnerContext(supabase, user.id);
+  const ctx = await getMemberContext(supabase, user.id);
+  // Reception and professionals don't edit the business setup.
+  if (ctx && !can(ctx.role).manageBusiness) redirect("/dashboard/calendar");
   return { user, supabase, ctx };
+}
+
+// The single active professional when the business is a one-person
+// operation; null for teams (they assign services and hours per person).
+async function soloStaffId(supabase: Awaited<ReturnType<typeof createClient>>, locationId: string) {
+  const { data } = await supabase.from("staff").select("id").eq("location_id", locationId).eq("active", true).limit(2);
+  return data?.length === 1 ? data[0].id : null;
 }
 
 // ---------- Step 1: business ----------
@@ -95,11 +105,12 @@ export async function addService(_prev: FormState, formData: FormData): Promise<
     .single();
   if (error) return { status: "error", message: friendlyDbError(error), values: echoValues(formData) };
 
-  // Solo owners do every service themselves; teams assign staff later.
-  if (ctx.ownerStaffId) {
+  // A one-person business does every service; teams assign them on the Team page.
+  const solo = await soloStaffId(supabase, ctx.location.id);
+  if (solo) {
     const { error: linkError } = await supabase
       .from("staff_services")
-      .insert({ staff_id: ctx.ownerStaffId, service_id: service.id, location_id: ctx.location.id });
+      .insert({ staff_id: solo, service_id: service.id, location_id: ctx.location.id });
     if (linkError) return { status: "error", message: friendlyDbError(linkError) };
   }
 
@@ -118,25 +129,12 @@ export async function removeService(serviceId: string) {
 
 // ---------- Step 3: hours ----------
 
-const TIME = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export async function saveHours(_prev: FormState, formData: FormData): Promise<FormState> {
   const { supabase, ctx } = await ownerOrRedirect();
   if (!ctx) redirect("/onboarding");
 
-  const rows: { weekday: number; opens: string; closes: string }[] = [];
-  const fieldErrors: Record<string, string[]> = {};
-
-  for (let weekday = 0; weekday <= 6; weekday++) {
-    if (formData.get(`open_${weekday}`) !== "on") continue;
-    const opens = String(formData.get(`opens_${weekday}`) ?? "");
-    const closes = String(formData.get(`closes_${weekday}`) ?? "");
-    if (!TIME.test(opens) || !TIME.test(closes) || closes <= opens) {
-      fieldErrors[`day_${weekday}`] = ["Closing time must be after opening time"];
-      continue;
-    }
-    rows.push({ weekday, opens, closes });
-  }
+  const { rows, fieldErrors } = parseWeekHours(formData);
 
   if (Object.keys(fieldErrors).length) {
     return { status: "error", message: "Please fix the highlighted days.", fieldErrors, values: echoValues(formData) };
@@ -155,11 +153,13 @@ export async function saveHours(_prev: FormState, formData: FormData): Promise<F
   );
   if (insError) return { status: "error", message: friendlyDbError(insError), values: echoValues(formData) };
 
-  if (ctx.ownerStaffId) {
-    await supabase.from("staff_working_hours").delete().eq("staff_id", ctx.ownerStaffId);
+  // For a one-person business, opening hours are also their bookable hours.
+  const solo = await soloStaffId(supabase, ctx.location.id);
+  if (solo) {
+    await supabase.from("staff_working_hours").delete().eq("staff_id", solo);
     const { error } = await supabase.from("staff_working_hours").insert(
       rows.map((r) => ({
-        staff_id: ctx.ownerStaffId!,
+        staff_id: solo,
         location_id: ctx.location.id,
         weekday: r.weekday,
         starts_at: r.opens,

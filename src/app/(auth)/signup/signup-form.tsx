@@ -8,7 +8,15 @@ import { FormMessage, SubmitButton } from "@/components/ui/submit-button";
 import { idle } from "@/lib/form-state";
 import { signUp } from "../actions";
 
-export function SignUpForm({ accountType = "business", next }: { accountType?: "business" | "client"; next?: string }) {
+export function SignUpForm({
+  accountType = "business",
+  next,
+  defaultEmail,
+}: {
+  accountType?: "business" | "client" | "staff";
+  next?: string;
+  defaultEmail?: string;
+}) {
   const [state, action] = useActionState(signUp, idle);
   const err = (name: string) => state.fieldErrors?.[name]?.[0];
   const val = (name: string) => state.values?.[name];
@@ -51,8 +59,8 @@ export function SignUpForm({ accountType = "business", next }: { accountType?: "
             />
           </Field>
         )}
-        <Field label={accountType === "client" ? "Email" : "Work email"} htmlFor="email" error={err("email")}>
-          <Input id="email" name="email" defaultValue={val("email")} type="email" autoComplete="email" required aria-invalid={!!err("email")} />
+        <Field label={accountType === "business" ? "Work email" : "Email"} htmlFor="email" error={err("email")}>
+          <Input id="email" name="email" defaultValue={val("email") ?? defaultEmail} type="email" autoComplete="email" required aria-invalid={!!err("email")} />
         </Field>
         <Field label="Password" htmlFor="password" hint="At least 8 characters" error={err("password")}>
           <Input

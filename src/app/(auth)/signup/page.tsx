@@ -12,7 +12,10 @@ export const metadata: Metadata = { title: "Create an account" };
 export default async function SignUpPage({ searchParams }: PageProps<"/signup">) {
   const params = await searchParams;
   const next = typeof params.next === "string" ? safeNextPath(params.next, "") || undefined : undefined;
-  const isClient = Boolean(next);
+  const isInvite = Boolean(next?.startsWith("/invite/"));
+  const isClient = Boolean(next) && !isInvite;
+  const accountType = isInvite ? "staff" : isClient ? "client" : "business";
+  const defaultEmail = typeof params.email === "string" ? params.email : undefined;
 
   if (await getCurrentUser()) redirect(next ?? "/onboarding");
 
@@ -21,17 +24,21 @@ export default async function SignUpPage({ searchParams }: PageProps<"/signup">)
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-3 text-center">
-        <Eyebrow className="justify-center">{isClient ? "Almost there" : "For businesses"}</Eyebrow>
+        <Eyebrow className="justify-center">
+          {isInvite ? "Team invite" : isClient ? "Almost there" : "For businesses"}
+        </Eyebrow>
         <h1 className="font-display text-4xl leading-tight">
-          {isClient ? "Create your account" : "List your business"}
+          {isInvite ? "Join your team" : isClient ? "Create your account" : "List your business"}
         </h1>
         <p className="text-ink-soft">
-          {isClient
-            ? "One account to book, reschedule and manage your appointments."
-            : "Set up takes about five minutes. You only pay once you go live."}
+          {isInvite
+            ? "Create your login to see your calendar."
+            : isClient
+              ? "One account to book, reschedule and manage your appointments."
+              : "Set up takes about five minutes. You only pay once you go live."}
         </p>
       </div>
-      <SignUpForm accountType={isClient ? "client" : "business"} next={next} />
+      <SignUpForm accountType={accountType} next={next} defaultEmail={defaultEmail} />
       <p className="text-center text-sm text-muted">
         Already have an account?{" "}
         <Link href={loginHref} className="font-medium text-ink underline underline-offset-2">

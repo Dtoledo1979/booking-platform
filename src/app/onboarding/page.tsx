@@ -5,7 +5,7 @@ import { AppHeader, businessNav } from "@/components/app/app-header";
 import { Eyebrow } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
 import { cn } from "@/lib/cn";
-import { getOwnerContext, getSetupStep, type SetupStep } from "@/lib/owner-context";
+import { can, getMemberContext, getSetupStep, type SetupStep } from "@/lib/owner-context";
 import { createClient } from "@/lib/supabase/server";
 import { BusinessStep } from "./business-step";
 import { HoursStep } from "./hours-step";
@@ -24,7 +24,8 @@ const ORDER: SetupStep[] = ["business", "services", "hours", "done"];
 export default async function OnboardingPage({ searchParams }: PageProps<"/onboarding">) {
   const user = await requireUser("/onboarding");
   const supabase = await createClient();
-  const ctx = await getOwnerContext(supabase, user.id);
+  const ctx = await getMemberContext(supabase, user.id);
+  if (ctx && !can(ctx.role).manageBusiness) redirect("/dashboard/calendar");
   const progress = await getSetupStep(supabase, ctx);
 
   // ?step= lets the owner revisit a completed step, never skip ahead.
@@ -56,14 +57,19 @@ export default async function OnboardingPage({ searchParams }: PageProps<"/onboa
       .from("location_opening_hours")
       .select("weekday, opens_at, closes_at")
       .eq("location_id", ctx.location.id);
-    body = <HoursStep hours={data ?? []} ownerWorks={!!ctx.ownerStaffId} editing={editing} />;
+    const { count: activeStaff } = await supabase
+      .from("staff")
+      .select("id", { count: "exact", head: true })
+      .eq("location_id", ctx.location.id)
+      .eq("active", true);
+    body = <HoursStep hours={data ?? []} ownerWorks={activeStaff === 1} editing={editing} />;
   }
 
   return (
     <>
       <AppHeader
         subtitle={ctx?.location.name}
-        nav={editing && ctx ? businessNav(ctx.location.slug, step === "services" ? "services" : "hours") : []}
+        nav={editing && ctx ? businessNav(ctx.location.slug, step === "services" ? "services" : "hours", ctx.role) : []}
       />
       <main className="mx-auto flex w-full max-w-xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
         {!editing && (

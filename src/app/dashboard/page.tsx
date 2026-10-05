@@ -5,7 +5,7 @@ import { AppHeader, businessNav } from "@/components/app/app-header";
 import { buttonClasses } from "@/components/ui/button";
 import { Badge, Card, Eyebrow } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
-import { getOwnerContext, getSetupStep } from "@/lib/owner-context";
+import { can, getMemberContext, getSetupStep } from "@/lib/owner-context";
 import { createClient } from "@/lib/supabase/server";
 
 export const metadata: Metadata = { title: "Dashboard" };
@@ -28,7 +28,7 @@ type ChecklistItem = {
 export default async function DashboardPage() {
   const user = await requireUser("/dashboard");
   const supabase = await createClient();
-  const ctx = await getOwnerContext(supabase, user.id);
+  const ctx = await getMemberContext(supabase, user.id);
 
   if (!ctx) {
     // Clients have no business to manage: send them to their bookings.
@@ -36,6 +36,7 @@ export default async function DashboardPage() {
     const accountType = (data?.claims?.user_metadata as { account_type?: string } | undefined)?.account_type;
     redirect(accountType === "client" ? "/my-bookings" : "/onboarding");
   }
+  if (!can(ctx.role).manageBusiness) redirect("/dashboard/calendar");
   if ((await getSetupStep(supabase, ctx)) !== "done") redirect("/onboarding");
 
   const [{ count: services }, { data: profile }, { data: location }] = await Promise.all([
@@ -69,7 +70,7 @@ export default async function DashboardPage() {
 
   return (
     <>
-      <AppHeader subtitle={ctx.location.name} nav={businessNav(ctx.location.slug, "overview")} />
+      <AppHeader subtitle={ctx.location.name} nav={businessNav(ctx.location.slug, "overview", ctx.role)} />
       <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
         <div className="flex flex-wrap items-end justify-between gap-4">
           <div className="flex flex-col gap-3">

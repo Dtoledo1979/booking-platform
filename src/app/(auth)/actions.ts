@@ -1,10 +1,10 @@
 "use server";
 
-import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { safeNextPath } from "@/lib/auth";
 import { echoValues, fieldErrorsOf, type FormState } from "@/lib/form-state";
+import { siteOrigin } from "@/lib/site";
 import { createClient } from "@/lib/supabase/server";
 
 const signUpSchema = z.object({
@@ -13,7 +13,7 @@ const signUpSchema = z.object({
   email: z.email("Enter a valid email address").trim().toLowerCase(),
   password: z.string().min(8, "Use at least 8 characters").max(72),
   terms: z.literal("on", { error: "You need to accept the terms to continue" }),
-  accountType: z.enum(["business", "client"]).default("business"),
+  accountType: z.enum(["business", "client", "staff"]).default("business"),
   phone: z
     .string()
     .trim()
@@ -23,14 +23,6 @@ const signUpSchema = z.object({
   next: z.string().optional(),
 });
 
-async function siteOrigin() {
-  if (process.env.NEXT_PUBLIC_SITE_URL) return process.env.NEXT_PUBLIC_SITE_URL;
-  const h = await headers();
-  const host = h.get("x-forwarded-host") ?? h.get("host");
-  const proto = h.get("x-forwarded-proto") ?? "http";
-  return `${proto}://${host}`;
-}
-
 export async function signUp(_prev: FormState, formData: FormData): Promise<FormState> {
   const parsed = signUpSchema.safeParse(Object.fromEntries(formData));
   if (!parsed.success) return fieldErrorsOf(parsed.error, formData);
@@ -39,7 +31,10 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
     return { status: "error", fieldErrors: { phone: ["We need your mobile for appointment reminders"] }, values: echoValues(formData) };
   }
   // Business owners continue to setup; clients go back to what they were booking.
-  const destination = safeNextPath(parsed.data.next, accountType === "client" ? "/my-bookings" : "/onboarding");
+  const destination = safeNextPath(
+    parsed.data.next,
+    accountType === "client" ? "/my-bookings" : accountType === "staff" ? "/dashboard" : "/onboarding",
+  );
 
   const supabase = await createClient();
   const { data, error } = await supabase.auth.signUp({
@@ -76,6 +71,8 @@ export async function signUp(_prev: FormState, formData: FormData): Promise<Form
     message:
       accountType === "client"
         ? `We've sent a confirmation link to ${email}. Open it to finish your booking.`
+        : accountType === "staff"
+          ? `We've sent a confirmation link to ${email}. Open it to join your team.`
         : `We've sent a confirmation link to ${email}. Open it to continue setting up your business.`,
   };
 }

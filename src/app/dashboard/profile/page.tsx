@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { AppHeader, businessNav } from "@/components/app/app-header";
 import { Eyebrow } from "@/components/ui/card";
 import { requireUser } from "@/lib/auth";
-import { getOwnerContext } from "@/lib/owner-context";
+import { can, getMemberContext } from "@/lib/owner-context";
 import { createClient } from "@/lib/supabase/server";
 import { ProfileForm } from "./profile-form";
 
@@ -12,8 +12,9 @@ export const metadata: Metadata = { title: "Location profile" };
 export default async function LocationProfilePage() {
   const user = await requireUser("/dashboard/profile");
   const supabase = await createClient();
-  const ctx = await getOwnerContext(supabase, user.id);
+  const ctx = await getMemberContext(supabase, user.id);
   if (!ctx) redirect("/onboarding");
+  if (!can(ctx.role).manageBusiness) redirect("/dashboard/calendar");
 
   const { data: profile } = await supabase
     .from("locations")
@@ -24,7 +25,7 @@ export default async function LocationProfilePage() {
 
   return (
     <>
-      <AppHeader subtitle={ctx.location.name} nav={businessNav(ctx.location.slug, "profile")} />
+      <AppHeader subtitle={ctx.location.name} nav={businessNav(ctx.location.slug, "profile", ctx.role)} />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-8 px-4 py-10 sm:px-6">
         <div className="flex flex-col gap-3">
           <Eyebrow>Location profile</Eyebrow>

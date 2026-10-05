@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { loadCalendar } from "@/lib/calendar";
 import { cn } from "@/lib/cn";
 import { localDateKey, type PolicyTerms } from "@/lib/format";
-import { getOwnerContext, getSetupStep } from "@/lib/owner-context";
+import { can, getMemberContext, getSetupStep } from "@/lib/owner-context";
 import { createClient } from "@/lib/supabase/server";
 import { addDaysKey, DATE_KEY, localMinutes, startOfWeekKey, weekdayOf } from "@/lib/time";
 import { AppointmentPanel, type PanelFee } from "./appointment-panel";
@@ -26,7 +26,7 @@ const minutes = (t: string) => {
 export default async function CalendarPage({ searchParams }: PageProps<"/dashboard/calendar">) {
   const user = await requireUser("/dashboard/calendar");
   const supabase = await createClient();
-  const ctx = await getOwnerContext(supabase, user.id);
+  const ctx = await getMemberContext(supabase, user.id);
   if (!ctx || (await getSetupStep(supabase, ctx)) !== "done") redirect("/onboarding");
 
   const q = await searchParams;
@@ -61,13 +61,18 @@ export default async function CalendarPage({ searchParams }: PageProps<"/dashboa
         .limit(1)
         .maybeSingle(),
     ]);
-  const staff = staffRows ?? [];
+  // Professionals only see their own column; everyone else sees the team.
+  const perms = can(ctx.role);
+  const staff = (staffRows ?? []).filter((m) => perms.seeAllCalendars || m.id === ctx.myStaffId);
   const currency = locationRow?.currency ?? "NZD";
 
   const weekStaff = staff.find((m) => m.id === str("staff")) ?? staff[0];
   const firstDay = view === "week" ? startOfWeekKey(date) : date;
   const days = view === "week" ? 7 : 1;
-  const { appointments, timeOff } = await loadCalendar(supabase, ctx.location.id, firstDay, days, tz);
+  const loaded = await loadCalendar(supabase, ctx.location.id, firstDay, days, tz);
+  const visible = new Set(staff.map((m) => m.id));
+  const appointments = loaded.appointments.filter((x) => visible.has(x.staffId));
+  const timeOff = loaded.timeOff.filter((b) => b.staffId === null || visible.has(b.staffId));
 
   const hoursFor = (staffId: string, dateKey: string) =>
     (workRows ?? [])
@@ -173,6 +178,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/dashboa
       <BlockPanel
         block={timeOff.find((b) => b.id === str("block")) ?? null}
         staff={staff}
+        allowWholeLocation={perms.seeAllCalendars}
         timeZone={tz}
         defaults={{ staffId: staff.some((m) => m.id === str("staff")) ? str("staff")! : (staff[0]?.id ?? ""), date }}
         closeHref={closeHref}
@@ -190,7 +196,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/dashboa
 
   return (
     <>
-      <AppHeader subtitle={ctx.location.name} nav={businessNav(ctx.location.slug, "calendar")} />
+      <AppHeader subtitle={ctx.location.name} nav={businessNav(ctx.location.slug, "calendar", ctx.role)} />
       <main className="mx-auto flex w-full max-w-7xl flex-1 flex-col gap-5 px-4 py-6 sm:px-6">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex flex-wrap items-center gap-2">
@@ -252,8 +258,22 @@ export default async function CalendarPage({ searchParams }: PageProps<"/dashboa
 
         {staff.length === 0 ? (
           <Card className="flex flex-col gap-2">
-            <h2 className="font-display text-2xl">No bookable team members yet</h2>
-            <p className="text-ink-soft">Add the people who take appointments to see their calendars here.</p>
+            <h2 className="font-display text-2xl">
+              {perms.seeAllCalendars ? "No bookable team members yet" : "Your calendar isn't set up yet"}
+            </h2>
+            <p className="text-ink-soft">
+              {perms.manageBusiness ? (
+                <>
+                  Add the people who take appointments on the{" "}
+                  <Link href="/dashboard/team" className="underline underline-offset-2">
+                    Team
+                  </Link>{" "}
+                  page to see their calendars here.
+                </>
+              ) : (
+                "Ask your manager to link your login to your bookable profile."
+              )}
+            </p>
           </Card>
         ) : (
           <div className={cn("grid gap-5", side && "xl:grid-cols-[minmax(0,1fr)_24rem]")}>
