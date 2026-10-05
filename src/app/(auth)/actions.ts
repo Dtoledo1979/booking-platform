@@ -18,7 +18,7 @@ const signUpSchema = z.object({
     .string()
     .trim()
     .max(32)
-    .regex(/^[+ds()-]*$/, "Enter a valid phone number")
+    .regex(/^[+\d\s()-]*$/, "Enter a valid phone number")
     .optional(),
   next: z.string().optional(),
 });
