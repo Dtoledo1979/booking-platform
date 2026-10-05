@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { requestFeeCollection } from "@/lib/payments";
 import { createClient } from "@/lib/supabase/server";
 
 const id = z.uuid();
@@ -25,7 +26,7 @@ export async function cancelMyAppointment(appointmentId: string): Promise<{ erro
   await requireUser("/my-bookings");
   if (!id.safeParse(appointmentId).success) return { error: "Booking not found." };
   const supabase = await createClient();
-  const { error } = await supabase.rpc("cancel_appointment", { p_appointment_id: appointmentId });
+  const { data, error } = await supabase.rpc("cancel_appointment", { p_appointment_id: appointmentId });
   if (error) {
     return {
       error:
@@ -34,6 +35,8 @@ export async function cancelMyAppointment(appointmentId: string): Promise<{ erro
           : "We couldn't cancel this booking. Please try again.",
     };
   }
+  // A late cancellation creates a pending fee; collect it (docs/06 §6).
+  await requestFeeCollection((data as { fee_id?: string | null } | null)?.fee_id);
   revalidatePath("/my-bookings");
   return {};
 }

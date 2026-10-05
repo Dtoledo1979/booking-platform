@@ -48,9 +48,13 @@ export function AppHeader({ subtitle, nav = [], homeHref = "/dashboard" }: { sub
 }
 
 // Sections of the business dashboard.
-export function businessNav(slug: string, current: "overview" | "profile" | "services" | "hours"): NavItem[] {
+export function businessNav(
+  slug: string,
+  current: "overview" | "calendar" | "profile" | "services" | "hours",
+): NavItem[] {
   return [
     { href: "/dashboard", label: "Overview", current: current === "overview" },
+    { href: "/dashboard/calendar", label: "Calendar", current: current === "calendar" },
     { href: "/dashboard/profile", label: "Location profile", current: current === "profile" },
     { href: "/onboarding?step=services", label: "Services", current: current === "services" },
     { href: "/onboarding?step=hours", label: "Opening hours", current: current === "hours" },

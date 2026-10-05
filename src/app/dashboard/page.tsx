@@ -78,9 +78,14 @@ export default async function DashboardPage() {
               {profile?.first_name ? `Welcome, ${profile.first_name}.` : "Welcome."}
             </h1>
           </div>
-          <Link href={`/${ctx.location.slug}`} className={buttonClasses("secondary")}>
-            Preview booking page
-          </Link>
+          <div className="flex flex-wrap gap-2">
+            <Link href={`/${ctx.location.slug}`} className={buttonClasses("secondary")}>
+              Preview booking page
+            </Link>
+            <Link href="/dashboard/calendar" className={buttonClasses("primary")}>
+              Open calendar
+            </Link>
+          </div>
         </div>
 
         <Card className="flex flex-col gap-6">

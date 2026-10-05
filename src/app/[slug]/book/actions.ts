@@ -59,6 +59,9 @@ export async function confirmBooking(_prev: FormState, formData: FormData): Prom
   });
   if (error) return { status: "error", message: MESSAGES[error.message] ?? "We couldn't complete your booking. Please try again." };
 
-  const result = data as { appointment_id: string };
+  const result = data as { appointment_id: string; status: string };
+  // Fees enabled and no saved card: the slot is held while the client adds
+  // one (docs/06 §5).
+  if (result.status === "pending") redirect(`/${d.slug}/booked/${result.appointment_id}/card`);
   redirect(`/${d.slug}/booked/${result.appointment_id}`);
 }

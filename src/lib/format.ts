@@ -68,3 +68,11 @@ export function policySentences(policy: PolicyTerms, priceCents: number | null, 
     noShow && `Not showing up: ${noShow}.`,
   ].filter(Boolean) as string[];
 }
+
+// Same rule as private.fee_cents in the database (the server stays the
+// source of truth; this is for showing the amount before staff confirm).
+export function feeCents(type: FeeType, value: number, priceCents: number) {
+  if (type === "none") return 0;
+  if (type === "fixed") return Math.min(value, priceCents);
+  return Math.min(Math.round((priceCents * value) / 100), priceCents);
+}
