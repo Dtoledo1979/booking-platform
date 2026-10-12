@@ -22,6 +22,8 @@ documentación de `docs/`.
 | [docs/03-reservas-y-cancelaciones.md](docs/03-reservas-y-cancelaciones.md) | Disponibilidad, flujo de reserva, cancelación, no-show y fees |
 | [docs/04-suscripcion-y-pagos.md](docs/04-suscripcion-y-pagos.md) | Suscripción por sucursal, Stripe Billing y Stripe Connect |
 | [docs/05-preguntas-abiertas.md](docs/05-preguntas-abiertas.md) | Decisiones pendientes, cada una con un valor por defecto propuesto |
+| [docs/06-stripe-puntos-de-conexion.md](docs/06-stripe-puntos-de-conexion.md) | Cada punto donde se conectará Stripe y qué falta |
+| [docs/07-notificaciones.md](docs/07-notificaciones.md) | Recordatorios y avisos: qué se envía, cuándo y cómo configurar Resend, Twilio y el cron |
 
 ## Stack previsto
 

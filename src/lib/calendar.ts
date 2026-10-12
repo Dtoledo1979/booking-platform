@@ -19,7 +19,7 @@ export type CalendarAppointment = {
   policyAccepted: boolean;
   cancelledBy: Database["public"]["Enums"]["cancelled_by"] | null;
   notesFromClient: string | null;
-  client: { id: string; name: string; phone: string | null; email: string | null } | null;
+  client: { id: string; name: string; phone: string | null; email: string | null; allergies: string | null } | null;
 };
 
 export type CalendarBlock = { id: string; staffId: string | null; startsAt: string; endsAt: string; reason: string | null };
@@ -41,7 +41,7 @@ export async function loadCalendar(
       .select(
         "id, staff_id, service_id, service_name, starts_at, ends_at, hold_until, price_cents, " +
           "appointments!inner(id, status, source, cancelled_by, policy_accepted_at, notes_from_client, " +
-          "location_clients(id, first_name, last_name, phone, email))",
+          "location_clients(id, first_name, last_name, phone, email, allergies))",
       )
       .eq("location_id", locationId)
       .lt("starts_at", range.end)
@@ -72,7 +72,14 @@ export async function loadCalendar(
       cancelled_by: CalendarAppointment["cancelledBy"];
       policy_accepted_at: string | null;
       notes_from_client: string | null;
-      location_clients: { id: string; first_name: string; last_name: string | null; phone: string | null; email: string | null } | null;
+      location_clients: {
+        id: string;
+        first_name: string;
+        last_name: string | null;
+        phone: string | null;
+        email: string | null;
+        allergies: string | null;
+      } | null;
     };
   };
 
@@ -94,7 +101,9 @@ export async function loadCalendar(
       policyAccepted: Boolean(a.policy_accepted_at),
       cancelledBy: a.cancelled_by,
       notesFromClient: a.notes_from_client,
-      client: c ? { id: c.id, name: [c.first_name, c.last_name].filter(Boolean).join(" "), phone: c.phone, email: c.email } : null,
+      client: c
+        ? { id: c.id, name: [c.first_name, c.last_name].filter(Boolean).join(" "), phone: c.phone, email: c.email, allergies: c.allergies }
+        : null,
     };
   });
 

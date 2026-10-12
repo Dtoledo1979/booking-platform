@@ -550,6 +550,7 @@ export type Database = {
           default_buffer_minutes: number
           description: string | null
           email: string | null
+          email_notifications: boolean
           id: string
           is_verified: boolean
           lat: number | null
@@ -565,6 +566,7 @@ export type Database = {
           require_card: boolean
           slot_step_minutes: number
           slug: string
+          sms_notifications: boolean
           status: Database["public"]["Enums"]["location_status"]
           stripe_account_id: string | null
           stripe_charges_enabled: boolean
@@ -583,6 +585,7 @@ export type Database = {
           default_buffer_minutes?: number
           description?: string | null
           email?: string | null
+          email_notifications?: boolean
           id?: string
           is_verified?: boolean
           lat?: number | null
@@ -598,6 +601,7 @@ export type Database = {
           require_card?: boolean
           slot_step_minutes?: number
           slug: string
+          sms_notifications?: boolean
           status?: Database["public"]["Enums"]["location_status"]
           stripe_account_id?: string | null
           stripe_charges_enabled?: boolean
@@ -616,6 +620,7 @@ export type Database = {
           default_buffer_minutes?: number
           description?: string | null
           email?: string | null
+          email_notifications?: boolean
           id?: string
           is_verified?: boolean
           lat?: number | null
@@ -631,6 +636,7 @@ export type Database = {
           require_card?: boolean
           slot_step_minutes?: number
           slug?: string
+          sms_notifications?: boolean
           status?: Database["public"]["Enums"]["location_status"]
           stripe_account_id?: string | null
           stripe_charges_enabled?: boolean
@@ -712,6 +718,75 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "staff"
             referencedColumns: ["id", "location_id"]
+          },
+        ]
+      }
+      notifications: {
+        Row: {
+          appointment_id: string | null
+          attempts: number
+          channel: Database["public"]["Enums"]["notification_channel"]
+          claimed_at: string | null
+          created_at: string
+          dedupe_key: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_error: string | null
+          location_id: string
+          provider_message_id: string | null
+          recipient: string | null
+          scheduled_for: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["notification_status"]
+        }
+        Insert: {
+          appointment_id?: string | null
+          attempts?: number
+          channel: Database["public"]["Enums"]["notification_channel"]
+          claimed_at?: string | null
+          created_at?: string
+          dedupe_key: string
+          id?: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_error?: string | null
+          location_id: string
+          provider_message_id?: string | null
+          recipient?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"]
+        }
+        Update: {
+          appointment_id?: string | null
+          attempts?: number
+          channel?: Database["public"]["Enums"]["notification_channel"]
+          claimed_at?: string | null
+          created_at?: string
+          dedupe_key?: string
+          id?: string
+          kind?: Database["public"]["Enums"]["notification_kind"]
+          last_error?: string | null
+          location_id?: string
+          provider_message_id?: string | null
+          recipient?: string | null
+          scheduled_for?: string
+          sent_at?: string | null
+          status?: Database["public"]["Enums"]["notification_status"]
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_appointment_id_fkey"
+            columns: ["appointment_id"]
+            isOneToOne: false
+            referencedRelation: "appointments"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "notifications_location_id_fkey"
+            columns: ["location_id"]
+            isOneToOne: false
+            referencedRelation: "locations"
+            referencedColumns: ["id"]
           },
         ]
       }
@@ -1072,6 +1147,46 @@ export type Database = {
         Args: { p_appointment_id: string; p_reason?: string }
         Returns: Json
       }
+      claim_notifications: {
+        Args: {
+          p_channels?: Database["public"]["Enums"]["notification_channel"][]
+          p_limit?: number
+        }
+        Returns: {
+          appointment_id: string | null
+          attempts: number
+          channel: Database["public"]["Enums"]["notification_channel"]
+          claimed_at: string | null
+          created_at: string
+          dedupe_key: string
+          id: string
+          kind: Database["public"]["Enums"]["notification_kind"]
+          last_error: string | null
+          location_id: string
+          provider_message_id: string | null
+          recipient: string | null
+          scheduled_for: string
+          sent_at: string | null
+          status: Database["public"]["Enums"]["notification_status"]
+        }[]
+        SetofOptions: {
+          from: "*"
+          to: "notifications"
+          isOneToOne: false
+          isSetofReturn: true
+        }
+      }
+      complete_notification: {
+        Args: {
+          p_error?: string
+          p_id: string
+          p_provider_message_id?: string
+          p_recipient?: string
+          p_retryable?: boolean
+          p_status: Database["public"]["Enums"]["notification_status"]
+        }
+        Returns: undefined
+      }
       confirm_pending_appointment: {
         Args: { p_appointment_id: string }
         Returns: undefined
@@ -1134,6 +1249,25 @@ export type Database = {
         }[]
       }
       is_slug_available: { Args: { p_slug: string }; Returns: boolean }
+      location_client_summaries: {
+        Args: { p_limit?: number; p_location_id: string; p_search?: string }
+        Returns: {
+          created_at: string
+          email: string
+          fees_due_cents: number
+          first_name: string
+          has_account: boolean
+          id: string
+          is_blocked: boolean
+          last_name: string
+          last_visit: string
+          late_cancellations: number
+          next_visit: string
+          no_shows: number
+          phone: string
+          visits: number
+        }[]
+      }
       location_members: {
         Args: { p_location_id: string }
         Returns: {
@@ -1219,6 +1353,16 @@ export type Database = {
       fee_type: "none" | "fixed" | "percent"
       location_status: "draft" | "active" | "paused" | "archived"
       member_role: "owner" | "manager" | "reception" | "professional"
+      notification_channel: "email" | "sms"
+      notification_kind:
+        | "booking_confirmed"
+        | "booking_changed"
+        | "booking_cancelled"
+        | "reminder_free_window"
+        | "reminder_upcoming"
+        | "business_new_booking"
+        | "business_cancelled"
+      notification_status: "queued" | "sending" | "sent" | "failed" | "skipped"
       photo_category: "venue" | "portfolio"
       price_type: "fixed" | "from"
     }
@@ -1369,6 +1513,17 @@ export const Constants = {
       fee_type: ["none", "fixed", "percent"],
       location_status: ["draft", "active", "paused", "archived"],
       member_role: ["owner", "manager", "reception", "professional"],
+      notification_channel: ["email", "sms"],
+      notification_kind: [
+        "booking_confirmed",
+        "booking_changed",
+        "booking_cancelled",
+        "reminder_free_window",
+        "reminder_upcoming",
+        "business_new_booking",
+        "business_cancelled",
+      ],
+      notification_status: ["queued", "sending", "sent", "failed", "skipped"],
       photo_category: ["venue", "portfolio"],
       price_type: ["fixed", "from"],
     },

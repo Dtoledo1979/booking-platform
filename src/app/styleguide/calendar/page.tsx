@@ -41,7 +41,7 @@ export default function CalendarPreview() {
     policyAccepted: id !== "a3",
     cancelledBy: null,
     notesFromClient: id === "a1" ? "Running 5 min late maybe!" : null,
-    client: { id: `c-${id}`, name, phone: "021 555 0101", email: null },
+    client: { id: `c-${id}`, name, phone: "021 555 0101", email: null, allergies: id === "a2" ? "Acrylic monomer" : null },
   });
 
   const appointments = [

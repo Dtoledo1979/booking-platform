@@ -47,7 +47,9 @@ export function AppointmentPanel({
   note,
   closeHref,
   nowIso,
+  canOpenClient = false,
 }: {
+  canOpenClient?: boolean;
   appointment: CalendarAppointment;
   staffName: string;
   staff: { id: string; display_name: string }[];
@@ -90,7 +92,13 @@ export function AppointmentPanel({
     <Card className="flex flex-col gap-5">
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
-          <p className="truncate font-display text-2xl leading-tight">{a.client?.name ?? "Client"}</p>
+          {canOpenClient && a.client ? (
+            <Link href={`/dashboard/clients/${a.client.id}`} className="block truncate font-display text-2xl leading-tight underline-offset-4 hover:underline">
+              {a.client.name}
+            </Link>
+          ) : (
+            <p className="truncate font-display text-2xl leading-tight">{a.client?.name ?? "Client"}</p>
+          )}
           <p className="text-sm text-muted">
             {a.source === "staff" ? "Booked by the team" : "Booked online"}
           </p>
@@ -144,6 +152,13 @@ export function AppointmentPanel({
           </>
         )}
       </dl>
+
+      {a.client?.allergies && (
+        <p role="note" className="rounded-control bg-warning/10 px-3.5 py-2.5 text-sm text-warning">
+          <span className="font-medium">Allergies: </span>
+          {a.client.allergies}
+        </p>
+      )}
 
       {a.notesFromClient && (
         <p className="rounded-control bg-stone px-3.5 py-2.5 text-sm">

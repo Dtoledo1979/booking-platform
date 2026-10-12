@@ -26,8 +26,8 @@ for (const file of files) {
     if (/^set local search_path/.test(line)) {
       out.push(line);
       out.push("create temp table __tap (n serial, line text);");
-      out.push("grant all on __tap to anon, authenticated;");
-      out.push("grant all on sequence __tap_n_seq to anon, authenticated;");
+      out.push("grant all on __tap to anon, authenticated, service_role;");
+      out.push("grant all on sequence __tap_n_seq to anon, authenticated, service_role;");
     } else if (TAP_CALL.test(line)) {
       out.push(line.replace(/^select /, "insert into __tap (line) select "));
     } else if (/^rollback;\s*$/.test(line)) {

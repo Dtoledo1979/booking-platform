@@ -144,6 +144,7 @@ export default async function CalendarPage({ searchParams }: PageProps<"/dashboa
         note={note?.body ?? ""}
         closeHref={closeHref}
         nowIso={nowIso}
+        canOpenClient={perms.seeAllCalendars}
       />
     );
   } else if (panel === "new") {

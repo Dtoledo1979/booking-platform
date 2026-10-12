@@ -7,5 +7,7 @@ export default defineConfig({
   },
   test: {
     include: ["src/**/*.test.ts"],
+    // First use of Intl time-zone data can be slow on a cold CI runner.
+    testTimeout: 15000,
   },
 });

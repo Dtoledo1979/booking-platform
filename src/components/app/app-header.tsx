@@ -51,20 +51,23 @@ export function AppHeader({ subtitle, nav = [], homeHref = "/dashboard" }: { sub
 // Sections of the business dashboard, filtered by what the role can do.
 export function businessNav(
   slug: string,
-  current: "overview" | "calendar" | "team" | "profile" | "services" | "hours",
+  current: "overview" | "calendar" | "clients" | "team" | "messages" | "profile" | "services" | "hours",
   role: MemberRole = "owner",
 ): NavItem[] {
-  const manager = can(role).manageBusiness;
-  const items: (NavItem & { managerOnly?: boolean })[] = [
+  const perms = can(role);
+  const manager = perms.manageBusiness;
+  const items: (NavItem & { managerOnly?: boolean; frontDesk?: boolean })[] = [
     { href: "/dashboard", label: "Overview", current: current === "overview", managerOnly: true },
     { href: "/dashboard/calendar", label: "Calendar", current: current === "calendar" },
+    { href: "/dashboard/clients", label: "Clients", current: current === "clients", frontDesk: true },
     { href: "/dashboard/team", label: "Team", current: current === "team", managerOnly: true },
+    { href: "/dashboard/messages", label: "Messages", current: current === "messages", managerOnly: true },
     { href: "/dashboard/profile", label: "Location profile", current: current === "profile", managerOnly: true },
     { href: "/onboarding?step=services", label: "Services", current: current === "services", managerOnly: true },
     { href: "/onboarding?step=hours", label: "Opening hours", current: current === "hours", managerOnly: true },
     { href: `/${slug}`, label: "Booking page ↗" },
   ];
   return items
-    .filter((i) => manager || !i.managerOnly)
+    .filter((i) => (manager || !i.managerOnly) && (perms.seeAllCalendars || !i.frontDesk))
     .map((i) => ({ href: i.href, label: i.label, current: i.current }));
 }
